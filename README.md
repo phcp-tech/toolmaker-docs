@@ -1,6 +1,6 @@
 # Toolmaker Agent
 
-<p align="center"><strong><em>We don't care what you build, We care how you build it.</em></strong></p>
+<p align="center"><strong><em>We don't care what you build. We care how you build it.</em></strong></p>
 
 An AI-augmented requirements and system-design workbench: a Go backend with an embedded React UI for managing **Products, Features, Requirements, and UML/4+1-view system-design diagrams**, paired with an LLM-driven conversational agent and a Model Context Protocol (MCP) server so both humans and coding agents (e.g. Claude Code) can drive the same data model.
 
