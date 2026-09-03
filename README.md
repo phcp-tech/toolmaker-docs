@@ -4,10 +4,6 @@
 
 An AI-augmented requirements and system-design workbench: a Go backend with an embedded React UI for managing **Products, Features, Requirements, and UML/4+1-view system-design diagrams**, paired with an LLM-driven conversational agent and a Model Context Protocol (MCP) server so both humans and coding agents (e.g. Claude Code) can drive the same data model.
 
-<!-- SCREENSHOT: main workbench overview, e.g. the Requirements page with the
-     product/feature tree, detail panel, and chat panel all visible -->
-![Toolmaker Agent overview](docs/images/overview.png)
-
 ## What this is
 
 Toolmaker Agent is a single self-contained executable: a Go REST API with a layered architecture, SQLite storage, and the compiled React frontend embedded directly into the binary. Open one port and you get the full workbench — no separate frontend deployment, no external database to provision.
@@ -22,19 +18,7 @@ On top of the plain CRUD workbench, it adds three AI-native layers on the same d
 
 - **Product / Feature / Requirement / UML CRUD**, each with optimistic concurrency and full-row responses on create/update.
 
-  <!-- SCREENSHOT: Product Management page, a product selected with its detail panel open -->
-  ![Product management](docs/images/products.png)
-
-  <!-- SCREENSHOT: Requirement Analysis page with a Feature selected, showing the Feature detail panel -->
-  ![Feature management](docs/images/features.png)
-
-  <!-- SCREENSHOT: Requirement Analysis page with a Requirement selected, showing the Requirement detail panel -->
-  ![Requirement management](docs/images/requirements.png)
-
 - **4+1 system-design views** rendered as [Mermaid](https://mermaid.js.org/) diagrams (flowcharts, sequence, C4/architecture, state, ER, and more), editable per Feature. Any diagram can be exported client-side as a **PNG or SVG** image directly from its detail panel — no server round trip.
-
-  <!-- SCREENSHOT: system-design page showing a rendered Mermaid sequence diagram -->
-  ![System design view](docs/images/system-design.png)
 
 - **LLM chat agent** with:
   - A propose-confirm tool-calling flow for every write, so the model never mutates data without a human in the loop.
@@ -42,20 +26,37 @@ On top of the plain CRUD workbench, it adds three AI-native layers on the same d
   - Persisted, per-conversation history, automatically **summarized** once it grows past a threshold (rolling summary folds everything except the most recent turns, keeping long sessions within the model's context window).
   - Pluggable multi-provider configuration — OpenAI, Anthropic, Gemini, DeepSeek, Ollama, LM Studio, Hunyuan, Moonshot AI.
 
-  <!-- SCREENSHOT: Settings page, LLM section, provider list with one entry's detail panel open -->
-  ![LLM provider settings](docs/images/settings.png)
-
-  <!-- SCREENSHOT: chat panel mid-conversation, ideally showing a
-       propose/confirm dialog for a write action (e.g. "propose_update_requirement") -->
-  ![LLM chat agent](docs/images/chat-agent.png)
-
 - **MCP Server** — 20 tools, Streamable HTTP transport, so any MCP-aware client can query or edit the requirements model directly.
 
 - **RAG / semantic search** — a global search box in the header (searches every product in the org by default) plus a `semantic_search` tool available from both the chat agent and MCP clients. Every Create/Update asynchronously (re-)embeds the entity's content and a SQLite-backed `embedding_cache` table persists every vector so the in-memory index rebuilds instantly on restart without re-calling the embedding API.
 
-  <!-- SCREENSHOT: header search box open with a few results showing, kind badges visible -->
-  ![Semantic search](docs/images/search.png)
+## Three Ways to Manage Your Data
 
+Every entity in Toolmaker Agent — Product, Feature, Requirement, UML diagram — can be created, updated, and deleted through three independent front doors, all backed by the same service layer and the same database. Pick whichever fits the moment: fill out a form, describe what you want in plain language, or let a coding agent do it for you.
+
+### 1. Manual — the web UI
+
+Plain forms and detail panels: click "+ Create", type into a field, hit save. No AI in the loop at all — the baseline CRUD experience every other mode builds on.
+
+The recording below creates a Product with content, a Feature, two Requirements (deleting one), a realistic UML sequence diagram under the Process view, and finishes with a live semantic-search lookup that jumps straight to a matching Feature.
+
+![Manual CRUD demo](docs/images/manual-crud-demo.gif)
+
+### 2. LLM Chat — propose, confirm, done
+
+The header chat panel talks to the same entities in natural language. Every write goes through the **propose → confirm** flow described in [Tool Calling](#tool-calling) below: the model proposes an action, you see exactly what it's about to do, and nothing is written until you click Confirm.
+
+The recording below runs the same scenario as the manual demo, entirely through chat — including the model asking a clarifying question when a required field (a Requirement's content) is missing, rather than guessing, and then proposing the write once you answer.
+
+![LLM chat CRUD demo](docs/images/llmchat-crud-demo.gif)
+
+### 3. MCP — a coding agent driving the same data
+
+Register the server with an MCP-aware client such as Claude Code (see [MCP Server](#mcp-server) below) and it can create, query, update, and delete the exact same entities directly from the terminal. MCP tools execute immediately — there's no confirmation dialog, since the caller is a developer already driving the agent.
+
+The recording below is a real Claude Code session issuing MCP tool calls end to end: create a Product, a Feature, and a Requirement (again pausing to ask for a missing required field instead of guessing — this time the agent asks *you*, in the terminal), query them back, delete a Requirement, and create a UML sequence diagram.
+
+![MCP CRUD demo](docs/images/mcp-crud-demo.gif)
 
 ## Tool Calling
 
